@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="si">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bite Company - Van Sales & POS Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #060913;
+            --text-main: #f8fafc;
+            --glass-bg: rgba(13, 19, 36, 0.88);
+            --glass-border: rgba(56, 189, 248, 0.22);
+            --input-bg: #0f172a;
+            --input-border: #334155;
+        }
+        body.light-mode {
+            --bg-main: #f1f5f9;
+            --text-main: #0f172a;
+            --glass-bg: rgba(255, 255, 255, 0.94);
+            --glass-border: rgba(14, 165, 233, 0.3);
+            --input-bg: #ffffff;
+            --input-border: #cbd5e1;
+        }
+        body {
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .glass {
+            background: var(--glass-bg);
+            backdrop-filter: blur(18px);
+            border: 1px solid var(--glass-border);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+        }
+        input, select, textarea {
+            background-color: var(--input-bg) !important;
+            border-color: var(--input-border) !important;
+            color: var(--text-main) !important;
+        }
+        body.light-mode .text-white { color: #0f172a !important; }
+        body.light-mode .text-slate-300 { color: #334155 !important; }
+        body.light-mode .text-slate-400 { color: #64748b !important; }
+        body.light-mode .bg-slate-900, body.light-mode .bg-slate-950 { background-color: #e2e8f0 !important; }
+        body.light-mode .btn-white { color: #ffffff !important; }
+
+        .loader { border-top-color: #38bdf8; animation: spinner 0.8s linear infinite; }
+        @keyframes spinner { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 bg-slate-950/90 z-50 hidden flex-col items-center justify-center backdrop-blur-md">
+        <div class="loader rounded-full border-4 border-t-4 border-slate-700 h-14 w-14 mb-3"></div>
+        <p id="loaderText" class="text-sky-400 font-bold tracking-wider animate-pulse">Cloud සමඟ සම්බන්ධ වෙමින් පවතී...</p>
+    </div>
+
+    <!-- 1. REP LOGIN SECTION -->
+    <div id="loginSection" class="min-h-screen flex items-center justify-center p-4">
+        <div class="glass p-8 rounded-3xl w-full max-w-md relative">
+            <button onclick="toggleTheme()" class="absolute top-5 right-5 w-10 h-10 rounded-xl bg-slate-800/60 border border-slate-700 flex items-center justify-center text-amber-400">
+                <i id="loginThemeIcon" class="fas fa-sun"></i>
+            </button>
+            <div class="text-center mb-7">
+                <div class="w-16 h-16 bg-sky-500/10 text-sky-400 rounded-2xl flex items-center justify-center mx-auto mb-3 text-3xl border border-sky-500/30">
+                    <i class="fas fa-truck-fast"></i>
+                </div>
+                <h1 class="text-2xl font-black tracking-wide text-white">BITE <span class="text-sky-400">VAN SALES</span></h1>
+                <p class="text-slate-400 text-xs mt-1 uppercase tracking-widest">Field Rep Billing & POS System</p>
+            </div>
+            <form id="loginForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Rep Username</label>
+                    <input type="text" id="loginUser" required class="w-full px-4 py-3 rounded-xl border focus:outline-none focus:border-sky-400" placeholder="admin">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold uppercase text-slate-400 mb-1">Password</label>
+                    <input type="password" id="loginPass" required class="w-full px-4 py-3 rounded-xl border focus:outline-none focus:border-sky-400" placeholder="••••">
+                </div>
+                <p id="loginError" class="text-rose-400 text-xs font-semibold hidden">වැරදි Username හෝ Password එකකි!</p>
+                <button type="submit" class="btn-white w-full bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-400 hover:to-blue-500 text-white font-bold py-3.5 rounded-xl shadow-lg shadow-sky-500/25 transition">
+                    REP LOGIN
+                </button>
+            </form>
+            <p class="text-center text-[10px] text-slate-500 font-bold tracking-widest uppercase mt-6">ZOREX Zystem</p>
+        </div>
+    </div>
+
+    <!-- 2. MAIN VAN SALES APP SECTION -->
+    <div id="appSection" class="hidden flex-grow flex flex-col justify-between">
+        <div>
+            <!-- Top Navbar -->
+            <nav class="glass sticky top-0 z-40 px-4 py-3 flex flex-wrap justify-between items-center gap-2 border-b border-slate-800/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-10 h-10 rounded-xl bg-sky-500/10 border border-sky-500/30 flex items-center justify-center text-sky-400">
+                        <i class="fas fa-route"></i>
+                    </div>
+                    <div>
+                        <span class="font-black text-base text-white block leading-tight">BITE <span class="text-sky-400">POS</span></span>
+                        <span id="repDisplayName" class="text-[11px] font-bold text-emerald-400">Rep: -</span>
+                    </div>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <button id="btConnectBtn" onclick="connectBluetoothPrinter()" class="bg-indigo-500/15 hover:bg-indigo-500/25 border border-indigo-500/30 text-indigo-400 px-3 py-2 rounded-xl text-xs font-bold flex items-center gap-1.5 transition">
+                        <i class="fab fa-bluetooth-b"></i> <span id="btStatusText">Connect Printer</span>
+                    </button>
+
+                    <button id="dutyToggleBtn" onclick="toggleDutyStatus()" class="px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition shadow">
+                        <i class="fas fa-power-off"></i> <span id="dutyBtnText">DUTY OFF</span>
+                    </button>
+
+                    <button onclick="syncRepData()" title="Sync Stock" class="bg-slate-800/80 px-3 py-2 rounded-xl text-sky-400 text-xs border border-slate-700/50">
+                        <i class="fas fa-sync-alt"></i>
+                    </button>
+
+                    <button onclick="toggleTheme()" class="bg-slate-800/80 px-3 py-2 rounded-xl text-amber-400 text-xs border border-slate-700/50">
+                        <i id="appThemeIcon" class="fas fa-sun"></i>
+                    </button>
+
+                    <button onclick="logout()" class="text-rose-400 hover:text-rose-300 p-2 text-sm">
+                        <i class="fas fa-sign-out-alt"></i>
+                    </button>
+                </div>
+            </nav>
+
+            <!-- DUTY OFF LOCK SCREEN -->
+            <div id="dutyLockScreen" class="max-w-xl mx-auto my-12 p-8 glass rounded-3xl text-center space-y-5 border-2 border-rose-500/30">
+                <div class="w-20 h-20 rounded-full bg-rose-500/10 text-rose-400 flex items-center justify-center mx-auto text-3xl border border-rose-500/30">
+                    <i class="fas fa-lock"></i>
+                </div>
+                <h2 class="text-2xl font-black text-white">ඔබගේ Duty තවම ON කර නැත!</h2>
+                <p class="text-sm text-slate-400">බිල්පත් නිකුත් කිරීමට සහ වාහන තොග බැලීමට පළමුව <b>DUTY ON</b> කරන්න.</p>
+                <button onclick="toggleDutyStatus()" class="btn-white bg-emerald-600 hover:bg-emerald-500 text-white font-black px-8 py-4 rounded-2xl text-sm tracking-wider shadow-lg shadow-emerald-600/30 transition">
+                    <i class="fas fa-play-circle mr-2"></i> START DUTY NOW (DUTY ON)
+                </button>
+            </div>
+
+            <!-- ACTIVE WORKSPACE -->
+            <div id="activeWorkspace" class="hidden">
+                <div class="flex overflow-x-auto bg-slate-950/70 border-b border-slate-800/60 px-4 py-2 gap-2">
+                    <button onclick="switchTab('pos')" class="tab-btn active-tab py-2.5 px-4 text-xs font-bold uppercase rounded-xl bg-sky-500/15 text-sky-400 border-b-2 border-sky-400 whitespace-nowrap" data-tab="pos"><i class="fas fa-cash-register mr-1"></i> POS Billing</button>
+                    <button onclick="switchTab('vanstock')" class="tab-btn py-2.5 px-4 text-xs font-bold uppercase rounded-xl text-slate-400 border-b-2 border-transparent whitespace-nowrap" data-tab="vanstock"><i class="fas fa-truck-ramp-box mr-1"></i> My Van Stock</button>
+                    <button onclick="switchTab('customers')" class="tab-btn py-2.5 px-4 text-xs font-bold uppercase rounded-xl text-slate-400 border-b-2 border-transparent whitespace-nowrap" data-tab="customers"><i class="fas fa-store mr-1"></i> Customers</button>
+                    <button onclick="switchTab('returns')" class="tab-btn py-2.5 px-4 text-xs font-bold uppercase rounded-xl text-slate-400 border-b-2 border-transparent whitespace-nowrap" data-tab="returns"><i class="fas fa-undo-alt mr-1"></i> Returns</button>
+                    <button onclick="switchTab('history')" class="tab-btn py-2.5 px-4 text-xs font-bold uppercase rounded-xl text-slate-400 border-b-2 border-transparent whitespace-nowrap" data-tab="history"><i class="fas fa-receipt mr-1"></i> Today's Bills</button>
+                </div>
+
+                <div class="w-full px-4 sm:px-6 py-5 space-y-6">
+                    <!-- TAB 1: POS BILLING -->
+                    <div id="tab-pos" class="tab-content grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass p-6 rounded-3xl lg:col-span-2 space-y-5">
+                            <div class="flex justify-between items-center border-b border-slate-800/50 pb-3">
+                                <h3 class="text-lg font-black text-sky-400"><i class="fas fa-file-invoice mr-2"></i>නව බිල්පතක් සකස් කිරීම</h3>
+                                <span id="vehicleBadge" class="text-xs font-bold bg-amber-500/10 text-amber-400 px-3 py-1 rounded-xl border border-amber-500/20">Vehicle: -</span>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div>
+                                    <label class="text-xs font-bold uppercase text-slate-400">කඩය තෝරන්න (Customer)</label>
+                                    <select id="posCustomerSelect" class="w-full mt-1.5 px-4 py-3 rounded-xl border outline-none"><option value="">-- Customer තෝරන්න --</option></select>
+                                </div>
+                                <div>
+                                    <label class="text-xs font-bold uppercase text-slate-400">ගෙවීම් ක්‍රමය (Payment)</label>
+                                    <select id="posPaymentMode" class="w-full mt-1.5 px-4 py-3 rounded-xl border outline-none">
+                                        <option value="CASH">CASH (මුදල්)</option>
+                                        <option value="CREDIT">CREDIT (ණයට)</option>
+                                    </select>
+                                </div>
+                            </div>
+
+                            <div class="p-4 rounded-2xl bg-slate-900/50 border border-slate-800/60 space-y-4">
+                                <p class="text-xs font-bold text-emerald-400 uppercase"><i class="fas fa-check-circle mr-1"></i> ඔබේ වාහනයට Load කළ තොගය:</p>
+                                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                    <div class="sm:col-span-2">
+                                        <label class="text-xs font-semibold text-slate-400">භාණ්ඩය (Loaded Item)</label>
+                                        <select id="posItemSelect" class="w-full mt-1 px-4 py-3 rounded-xl border outline-none"></select>
+                                    </div>
+                                    <div>
+                                        <label class="text-xs font-semibold text-slate-400">ප්‍රමාණය (Qty)</label>
+                                        <input type="number" id="posQty" min="1" placeholder="උදා: 10" class="w-full mt-1 px-4 py-3 rounded-xl border outline-none">
+                                    </div>
+                                </div>
+                                <p id="posStockError" class="text-rose-400 text-xs font-bold hidden"></p>
+                                <button type="button" onclick="addToPosCart()" class="btn-white w-full sm:w-auto bg-sky-500 hover:bg-sky-400 text-slate-950 font-black px-6 py-3 rounded-xl text-xs uppercase tracking-wider transition shadow">
+                                    <i class="fas fa-cart-plus mr-1"></i> බිලට එකතු කරන්න
+                                </button>
+                            </div>
+
+                            <div class="overflow-x-auto border border-slate-800/50 rounded-2xl">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase">
+                                        <tr><th class="p-3">Item</th><th class="p-3">Price</th><th class="p-3">Qty</th><th class="p-3">Total</th><th class="p-3 text-center">Del</th></tr>
+                                    </thead>
+                                    <tbody id="posCartBody" class="divide-y divide-slate-800/40"><tr><td colspan="5" class="p-6 text-center text-slate-500">බිල්පතට තවම අයිතම එකතු කර නැත.</td></tr></tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="glass p-6 rounded-3xl flex flex-col justify-between space-y-5">
+                            <div class="space-y-4">
+                                <h3 class="text-lg font-black text-emerald-400 border-b border-slate-800/50 pb-3">බිල් සාරාංශය (Summary)</h3>
+                                <div class="flex justify-between text-sm"><span class="text-slate-400">මුළු අයිතම ගණන:</span><span id="posTotalItems" class="font-bold text-white">0</span></div>
+                                <div class="flex justify-between text-xl font-black border-t border-slate-800/60 pt-3"><span class="text-white">මුළු මුදල:</span><span id="posGrandTotal" class="text-emerald-400">Rs. 0.00</span></div>
+                            </div>
+                            <div class="space-y-3 pt-4">
+                                <button onclick="completeAndPrintBill()" class="btn-white w-full bg-emerald-600 hover:bg-emerald-500 text-white font-black py-4 rounded-2xl shadow-xl shadow-emerald-600/25 tracking-wider text-sm transition">
+                                    <i class="fas fa-print mr-2"></i> SAVE & PRINT BILL
+                                </button>
+                                <button onclick="clearPosCart()" class="w-full bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 font-bold py-2.5 rounded-xl text-xs transition">Clear Cart</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 2: VAN STOCK -->
+                    <div id="tab-vanstock" class="tab-content hidden glass p-6 rounded-3xl space-y-4">
+                        <div class="flex justify-between items-center">
+                            <h3 class="text-xl font-black text-white">ඔබගේ වාහනයේ ඇති තොගය (Assigned Loading)</h3>
+                            <button onclick="syncRepData()" class="bg-sky-500/15 text-sky-400 px-4 py-2 rounded-xl text-xs font-bold"><i class="fas fa-sync-alt mr-1"></i> Refresh</button>
+                        </div>
+                        <div class="overflow-x-auto border border-slate-800/50 rounded-2xl">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase"><tr><th class="p-4">Date</th><th class="p-4">Vehicle</th><th class="p-4">Item Name</th><th class="p-4">Loaded Qty</th><th class="p-4">Remaining Qty</th><th class="p-4">Unit Price</th></tr></thead>
+                                <tbody id="vanStockTableBody" class="divide-y divide-slate-800/40 font-medium"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- TAB 3: CUSTOMERS -->
+                    <div id="tab-customers" class="tab-content hidden grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <div class="glass p-6 rounded-3xl h-fit">
+                            <h3 class="text-lg font-black text-sky-400 mb-4"><i class="fas fa-store-alt mr-2"></i>නව කඩයක් එකතු කරන්න</h3>
+                            <form id="addCustomerForm" class="space-y-4">
+                                <div><label class="text-xs font-bold text-slate-400">කඩයේ නම</label><input type="text" id="custShopName" required class="w-full mt-1 px-4 py-3 rounded-xl border outline-none"></div>
+                                <div><label class="text-xs font-bold text-slate-400">හිමිකරුගේ නම</label><input type="text" id="custOwnerName" required class="w-full mt-1 px-4 py-3 rounded-xl border outline-none"></div>
+                                <div><label class="text-xs font-bold text-slate-400">දුරකථන අංකය</label><input type="tel" id="custPhone" required class="w-full mt-1 px-4 py-3 rounded-xl border outline-none"></div>
+                                <div><label class="text-xs font-bold text-slate-400">ලිපිනය / මාර්ගය</label><input type="text" id="custRoute" required class="w-full mt-1 px-4 py-3 rounded-xl border outline-none"></div>
+                                <button type="submit" class="btn-white w-full bg-sky-500 text-slate-950 font-black py-3.5 rounded-xl">SAVE CUSTOMER</button>
+                            </form>
+                        </div>
+                        <div class="glass p-6 rounded-3xl lg:col-span-2">
+                            <h3 class="text-lg font-black text-white mb-4">කඩ සාප්පු ලැයිස්තුව</h3>
+                            <div class="overflow-x-auto border border-slate-800/50 rounded-2xl">
+                                <table class="w-full text-left text-sm">
+                                    <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase"><tr><th class="p-3">Shop Name</th><th class="p-3">Owner</th><th class="p-3">Phone</th><th class="p-3">Route</th></tr></thead>
+                                    <tbody id="customersTableBody" class="divide-y divide-slate-800/40"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TAB 4: RETURNS -->
+                    <div id="tab-returns" class="tab-content hidden max-w-2xl mx-auto glass p-8 rounded-3xl border-t-4 border-purple-400">
+                        <h3 class="text-xl font-black text-purple-400 mb-2"><i class="fas fa-undo-alt mr-2"></i>ආපසු භාරගත් බඩු (Returns)</h3>
+                        <form id="repReturnForm" class="space-y-4">
+                            <div><label class="text-xs font-bold text-slate-400">භාණ්ඩය</label><select id="retItemSelect" required class="w-full mt-1 px-4 py-3 rounded-xl border outline-none"></select></div>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div><label class="text-xs font-bold text-slate-400">තත්ත්වය</label><select id="retCondition" required class="w-full mt-1 px-4 py-3 rounded-xl border outline-none"><option value="GOOD">GOOD</option><option value="DAMAGED">DAMAGED</option></select></div>
+                                <div><label class="text-xs font-bold text-slate-400">ප්‍රමාණය</label><input type="number" id="retQty" min="1" required class="w-full mt-1 px-4 py-3 rounded-xl border outline-none"></div>
+                            </div>
+                            <button type="submit" class="btn-white w-full bg-purple-600 text-white font-black py-3.5 rounded-xl">SUBMIT RETURN</button>
+                        </form>
+                    </div>
+
+                    <!-- TAB 5: HISTORY -->
+                    <div id="tab-history" class="tab-content hidden glass p-6 rounded-3xl space-y-4">
+                        <h3 class="text-xl font-black text-white">අද දින නිකුත් කළ බිල්පත් (Invoices)</h3>
+                        <div class="overflow-x-auto border border-slate-800/50 rounded-2xl">
+                            <table class="w-full text-left text-sm">
+                                <thead class="bg-slate-900/90 text-slate-400 text-xs uppercase"><tr><th class="p-3">Inv ID</th><th class="p-3">Time</th><th class="p-3">Customer</th><th class="p-3">Mode</th><th class="p-3">Amount</th><th class="p-3 text-center">Print</th></tr></thead>
+                                <tbody id="invoicesTableBody" class="divide-y divide-slate-800/40"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <footer class="w-full text-center py-3 border-t border-slate-800/40 text-[11px] font-black uppercase tracking-widest text-slate-500">ZOREX Zystem</footer>
+    </div>
+
+    <!-- RECEIPT MODAL -->
+    <div id="receiptModal" class="fixed inset-0 bg-slate-950/85 z-50 hidden items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white text-black p-6 rounded-2xl max-w-sm w-full shadow-2xl space-y-4">
+            <div id="receiptPrintArea" class="font-mono text-xs space-y-2 border-b border-dashed border-gray-400 pb-4">
+                <div class="text-center"><h2 class="font-bold text-base">BITE COMPANY (PVT) LTD</h2><p>Fresh & Crispy Snacks Distributor</p><p class="text-[10px] mt-1">--------------------------------</p></div>
+                <div class="text-[11px] space-y-0.5"><p><b>Inv No:</b> <span id="recInvId">-</span></p><p><b>Date:</b> <span id="recDate">-</span></p><p><b>Rep:</b> <span id="recRep">-</span></p><p><b>Shop:</b> <span id="recShop">-</span></p><p><b>Type:</b> <span id="recPayMode">-</span></p></div>
+                <p class="text-[10px]">--------------------------------</p>
+                <table class="w-full text-[11px]"><thead><tr class="border-b border-gray-400 text-left"><th>Item</th><th class="text-right">Qty</th><th class="text-right">Total</th></tr></thead><tbody id="recItemsBody"></tbody></table>
+                <p class="text-[10px]">--------------------------------</p>
+                <div class="flex justify-between font-bold text-sm"><span>NET TOTAL:</span><span id="recGrandTotal">Rs. 0.00</span></div>
+                <p class="text-center text-[10px] pt-2">Thank you for your business!<br>Powered by ZOREX Zystem</p>
+            </div>
+            <div class="flex gap-2 no-print">
+                <button onclick="printViaBluetoothDirect()" class="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-2.5 rounded-xl text-xs"><i class="fab fa-bluetooth-b mr-1"></i> BT Print</button>
+                <button onclick="window.print()" class="flex-1 bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl text-xs"><i class="fas fa-print mr-1"></i> Standard Print</button>
+                <button onclick="closeReceiptModal()" class="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold px-4 py-2.5 rounded-xl text-xs">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "https://sheetdb.io/api/v1/g6da9agm2g53q"; 
+
+        let currentUser = null;
+        let isDutyOn = false;
+        let currentDutyId = null;
+        let allItems = [];
+        let myVehicleLoads = [];
+        let customersList = [];
+        let invoicesList = [];
+        let posCart = [];
+        let lastPrintedInvoice = null;
+        let btDevice = null, btCharacteristic = null;
+
+        window.onload = () => {
+            initTheme();
+            const savedUser = localStorage.getItem('bite_van_user');
+            if (savedUser) { currentUser = JSON.parse(savedUser); initializeAppForUser(); }
+        };
+
+        function toggleLoader(show, text = "Syncing...") {
+            const el = document.getElementById('loadingOverlay');
+            document.getElementById('loaderText').innerText = text;
+            el.style.display = show ? 'flex' : 'none';
+        }
+
+        function initTheme() {
+            if ((localStorage.getItem('bite_theme') || 'dark') === 'light') document.body.classList.add('light-mode');
+        }
+
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-mode');
+            localStorage.setItem('bite_theme', isLight ? 'light' : 'dark');
+        }
+
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const u = document.getElementById('loginUser').value.trim();
+            const p = document.getElementById('loginPass').value.trim();
+            toggleLoader(true, "පරීක්ෂා කරමින්...");
+            try {
+                const res = await fetch(`${API_URL}/search?sheet=Users&username=${u}&password=${p}`);
+                const users = await res.json();
+                if (users.length > 0) {
+                    currentUser = users[0];
+                    if (!currentUser.rep_name) currentUser.rep_name = currentUser.username;
+                    localStorage.setItem('bite_van_user', JSON.stringify(currentUser));
+                    document.getElementById('loginError').classList.add('hidden');
+                    initializeAppForUser();
+                } else {
+                    document.getElementById('loginError').classList.remove('hidden');
+                }
+            } catch (err) { alert("API Connection Error!"); }
+            toggleLoader(false);
+        });
+
+        async function initializeAppForUser() {
+            document.getElementById('loginSection').classList.add('hidden');
+            document.getElementById('appSection').classList.remove('hidden');
+            document.getElementById('repDisplayName').innerText = `Rep: ${currentUser.rep_name}`;
+
+            const savedDuty = JSON.parse(localStorage.getItem(`duty_${currentUser.username}`) || 'null');
+            const today = new Date().toISOString().split('T')[0];
+            if (savedDuty && savedDuty.date === today && savedDuty.status === 'ON') {
+                isDutyOn = true; currentDutyId = savedDuty.duty_id;
+            } else { isDutyOn = false; }
+            updateDutyUI();
+            if (isDutyOn) await syncRepData();
+        }
+
+        async function toggleDutyStatus() {
+            const today = new Date().toISOString().split('T')[0];
+            const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            if (!isDutyOn) {
+                toggleLoader(true, "Duty ON කරමින්...");
+                currentDutyId = 'DTY-' + Date.now();
+                try {
+                    await fetch(`${API_URL}?sheet=Duty_Status`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ data: [{ duty_id: currentDutyId, date: today, rep_name: currentUser.rep_name, status: 'ON', login_time: nowTime, logout_time: '-' }] })
+                    });
+                    isDutyOn = true;
+                    localStorage.setItem(`duty_${currentUser.username}`, JSON.stringify({ duty_id: currentDutyId, date: today, status: 'ON' }));
+                    updateDutyUI(); await syncRepData();
+                } catch (e) { alert("Duty ON දෝෂයක්!"); }
+                toggleLoader(false);
+            } else {
+                if (!confirm("Duty OFF කිරීමට අවශ්‍යද?")) return;
+                toggleLoader(true, "Duty OFF කරමින්...");
+                try {
+                    if (currentDutyId) {
+                        await fetch(`${API_URL}/duty_id/${currentDutyId}?sheet=Duty_Status`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ data: { status: 'OFF', logout_time: nowTime } })
+                        });
+                    }
+                    isDutyOn = false;
+                    localStorage.removeItem(`duty_${currentUser.username}`);
+                    updateDutyUI();
+                } catch (e) { alert("Duty OFF දෝෂයක්!"); }
+                toggleLoader(false);
+            }
+        }
+
+        function updateDutyUI() {
+            const btn = document.getElementById('dutyToggleBtn');
+            const btnText = document.getElementById('dutyBtnText');
+            if (isDutyOn) {
+                btn.className = "btn-white px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition shadow bg-emerald-600 text-white";
+                btnText.innerText = "DUTY ON";
+                document.getElementById('dutyLockScreen').classList.add('hidden');
+                document.getElementById('activeWorkspace').classList.remove('hidden');
+            } else {
+                btn.className = "btn-white px-3.5 py-2 rounded-xl text-xs font-black flex items-center gap-1.5 transition shadow bg-rose-600 text-white";
+                btnText.innerText = "DUTY OFF";
+                document.getElementById('dutyLockScreen').classList.remove('hidden');
+                document.getElementById('activeWorkspace').classList.add('hidden');
+            }
+        }
+
+        function logout() { localStorage.removeItem('bite_van_user'); location.reload(); }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('bg-sky-500/15', 'text-sky-400', 'border-sky-400');
+                btn.classList.add('text-slate-400', 'border-transparent');
+            });
+            const active = document.querySelector(`[data-tab="${tabName}"]`);
+            active.classList.add('bg-sky-500/15', 'text-sky-400', 'border-sky-400');
+            active.classList.remove('text-slate-400', 'border-transparent');
+        }
+
+        async function syncRepData() {
+            toggleLoader(true, "වාහන තොග ලබාගනිමින්...");
+            try {
+                const [itemsRes, loadRes, custRes, invRes] = await Promise.all([
+                    fetch(`${API_URL}?sheet=Items`),
+                    fetch(`${API_URL}?sheet=Vehicle_Load`),
+                    fetch(`${API_URL}?sheet=Customers`),
+                    fetch(`${API_URL}?sheet=Invoices`)
+                ]);
+                allItems = await itemsRes.json();
+                const allLoads = await loadRes.json();
+                customersList = await custRes.json();
+                const allInvs = await invRes.json();
+
+                const repKey = (currentUser.rep_name || '').toLowerCase();
+                const userKey = (currentUser.username || '').toLowerCase();
+
+                myVehicleLoads = allLoads.filter(l => {
+                    const rName = (l.rep_name || '').toLowerCase();
+                    const vNo = (l.vehicle_no || '').toLowerCase();
+                    return rName.includes(repKey) || rName.includes(userKey) || repKey.includes(rName) || vNo.includes(repKey);
+                });
+
+                const today = new Date().toISOString().split('T')[0];
+                invoicesList = allInvs.filter(i => i.date === today && (i.rep_name || '').toLowerCase().includes(repKey));
+                renderAllViews();
+            } catch (err) { console.error(err); alert("ඩේටා ලබාගැනීමේ දෝෂයක්!"); }
+            toggleLoader(false);
+        }
+
+        function renderAllViews() {
+            const posItemSelect = document.getElementById('posItemSelect');
+            posItemSelect.innerHTML = '<option value="">-- වාහනයේ ඇති අයිතමයක් තෝරන්න --</option>';
+            const vanStockBody = document.getElementById('vanStockTableBody');
+            vanStockBody.innerHTML = '';
+            let vehicleLabel = "-";
+
+            myVehicleLoads.forEach(load => {
+                const rem = parseFloat(load.remaining_qty) || 0;
+                if (load.vehicle_no) vehicleLabel = load.vehicle_no;
+                const itemMaster = allItems.find(i => i.id === load.item_id || (i.name || '').toLowerCase() === (load.item_name || '').toLowerCase());
+                const sellPrice = itemMaster ? parseFloat(itemMaster.sell_price) : 0;
+
+                if (rem > 0) {
+                    posItemSelect.innerHTML += `<option value="${load.load_id}" data-price="${sellPrice}" data-rem="${rem}" data-name="${load.item_name}">${load.item_name} (ඉතිරි: ${rem} | Rs.${sellPrice})</option>`;
+                }
+                vanStockBody.innerHTML += `<tr><td class="p-4 text-slate-400">${load.date || '-'}</td><td class="p-4 font-bold text-amber-400">${load.vehicle_no || '-'}</td><td class="p-4 font-bold text-white">${load.item_name}</td><td class="p-4">${load.loaded_qty}</td><td class="p-4"><span class="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-400 font-black">${rem}</span></td><td class="p-4 text-sky-400 font-bold">Rs. ${sellPrice.toLocaleString()}</td></tr>`;
+            });
+
+            if (myVehicleLoads.length === 0) {
+                vanStockBody.innerHTML = `<tr><td colspan="6" class="p-6 text-center text-slate-500">මෙම නමට වාහන තොගයක් සටහන් වී නැත (Admin විසින් Loading දමා ඇත්දැයි පරීක්ෂා කරන්න).</td></tr>`;
+            }
+            document.getElementById('vehicleBadge').innerText = `Vehicle: ${vehicleLabel}`;
+
+            const custSelect = document.getElementById('posCustomerSelect');
+            const custBody = document.getElementById('customersTableBody');
+            custSelect.innerHTML = '<option value="">-- Customer තෝරන්න --</option>';
+            custBody.innerHTML = '';
+            customersList.forEach(c => {
+                custSelect.innerHTML += `<option value="${c.shop_name}">${c.shop_name} (${c.route || ''})</option>`;
+                custBody.innerHTML += `<tr><td class="p-3 font-bold text-white">${c.shop_name}</td><td class="p-3 text-slate-300">${c.owner_name || '-'}</td><td class="p-3 text-sky-400">${c.phone || '-'}</td><td class="p-3 text-slate-400">${c.route || '-'}</td></tr>`;
+            });
+
+            const retSelect = document.getElementById('retItemSelect');
+            retSelect.innerHTML = '<option value="">-- භාණ්ඩය තෝරන්න --</option>';
+            allItems.forEach(i => { retSelect.innerHTML += `<option value="${i.name}">${i.name}</option>`; });
+
+            const invBody = document.getElementById('invoicesTableBody');
+            invBody.innerHTML = '';
+            invoicesList.forEach(inv => {
+                invBody.innerHTML += `<tr><td class="p-3 font-bold text-sky-400">${inv.invoice_id}</td><td class="p-3 text-slate-400">${inv.time || '-'}</td><td class="p-3 font-bold text-white">${inv.customer_name}</td><td class="p-3"><span class="px-2 py-0.5 rounded text-xs font-bold ${inv.payment_mode === 'CASH' ? 'bg-emerald-500/15 text-emerald-400' : 'bg-amber-500/15 text-amber-400'}">${inv.payment_mode}</span></td><td class="p-3 font-black text-emerald-400">Rs. ${parseFloat(inv.total_amount).toLocaleString()}</td><td class="p-3 text-center"><button onclick='reprintInvoice(${JSON.stringify(inv)})' class="bg-slate-800 hover:bg-slate-700 text-white px-3 py-1.5 rounded-lg text-xs"><i class="fas fa-print"></i></button></td></tr>`;
+            });
+        }
+
+        function addToPosCart() {
+            const select = document.getElementById('posItemSelect');
+            const loadId = select.value;
+            const qty = parseFloat(document.getElementById('posQty').value);
+            const errEl = document.getElementById('posStockError');
+            errEl.classList.add('hidden');
+
+            if (!loadId || !qty || qty <= 0) { alert("භාණ්ඩයක් සහ ප්‍රමාණයක් දෙන්න!"); return; }
+            const option = select.options[select.selectedIndex];
+            const remStock = parseFloat(option.getAttribute('data-rem'));
+            const price = parseFloat(option.getAttribute('data-price'));
+            const itemName = option.getAttribute('data-name');
+
+            const existingQty = posCart.reduce((s, item) => item.load_id === loadId ? s + item.qty : s, 0);
+            if ((existingQty + qty) > remStock) {
+                errEl.innerText = `වාහනයේ ඇත්තේ පැකට් ${remStock} ක් පමණි!`;
+                errEl.classList.remove('hidden');
+                return;
+            }
+
+            posCart.push({ load_id: loadId, name: itemName, price: price, qty: qty, total: price * qty });
+            document.getElementById('posQty').value = '';
+            renderPosCart();
+        }
+
+        function removePosItem(idx) { posCart.splice(idx, 1); renderPosCart(); }
+        function clearPosCart() { posCart = []; renderPosCart(); }
+
+        function renderPosCart() {
+            const tbody = document.getElementById('posCartBody');
+            if (posCart.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-slate-500">බිල්පතට තවම අයිතම එකතු කර නැත.</td></tr>`;
+                document.getElementById('posTotalItems').innerText = "0";
+                document.getElementById('posGrandTotal').innerText = "Rs. 0.00";
+                return;
+            }
+            tbody.innerHTML = '';
+            let grandTotal = 0, totalQty = 0;
+            posCart.forEach((item, index) => {
+                grandTotal += item.total; totalQty += item.qty;
+                tbody.innerHTML += `<tr><td class="p-3 font-bold text-white">${item.name}</td><td class="p-3 text-slate-400">Rs. ${item.price}</td><td class="p-3 text-sky-400 font-bold">${item.qty}</td><td class="p-3 text-emerald-400 font-bold">Rs. ${item.total.toLocaleString()}</td><td class="p-3 text-center"><button onclick="removePosItem(${index})" class="text-rose-400"><i class="fas fa-trash"></i></button></td></tr>`;
+            });
+            document.getElementById('posTotalItems').innerText = totalQty;
+            document.getElementById('posGrandTotal').innerText = `Rs. ${grandTotal.toLocaleString()}`;
+        }
+
+        async function completeAndPrintBill() {
+            const customer = document.getElementById('posCustomerSelect').value;
+            const payMode = document.getElementById('posPaymentMode').value;
+            if (!customer) { alert("කඩය තෝරන්න!"); return; }
+            if (posCart.length === 0) { alert("අයිතම නැත!"); return; }
+
+            toggleLoader(true, "බිල්පත Save කරමින්...");
+            const invId = 'INV-' + Date.now().toString().slice(-6);
+            const today = new Date().toISOString().split('T')[0];
+            const timeNow = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const grandTotal = posCart.reduce((s, i) => s + i.total, 0);
+
+            const invoicePayload = { invoice_id: invId, date: today, time: timeNow, rep_name: currentUser.rep_name, customer_name: customer, items_json: JSON.stringify(posCart), total_amount: grandTotal, payment_mode: payMode };
+
+            try {
+                await fetch(`${API_URL}?sheet=Invoices`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ data: [invoicePayload] })
+                });
+
+                for (let sold of posCart) {
+                    const loadRow = myVehicleLoads.find(l => l.load_id === sold.load_id);
+                    if (loadRow) {
+                        const newRem = Math.max(0, (parseFloat(loadRow.remaining_qty) || 0) - sold.qty);
+                        await fetch(`${API_URL}/load_id/${sold.load_id}?sheet=Vehicle_Load`, {
+                            method: 'PATCH',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ data: { remaining_qty: newRem } })
+                        });
+                    }
+                }
+                showReceiptModal(invoicePayload, [...posCart]);
+                posCart = []; renderPosCart(); await syncRepData();
+            } catch (err) { alert("බිල්පත Save කිරීමේ දෝෂයක්!"); }
+            toggleLoader(false);
+        }
+
+        document.getElementById('addCustomerForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            toggleLoader(true, "කඩය එකතු කරමින්...");
+            const newCust = { customer_id: 'CUST-' + Date.now().toString().slice(-5), shop_name: document.getElementById('custShopName').value, owner_name: document.getElementById('custOwnerName').value, phone: document.getElementById('custPhone').value, address: document.getElementById('custRoute').value, route: document.getElementById('custRoute').value, assigned_rep: currentUser.rep_name };
+            await fetch(`${API_URL}?sheet=Customers`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: [newCust] }) });
+            e.target.reset(); await syncRepData(); alert("සාර්ථකව එකතු විය!");
+        });
+
+        document.getElementById('repReturnForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            toggleLoader(true, "Return සටහන් කරමින්...");
+            const retData = { return_id: 'RET-' + Date.now().toString().slice(-6), date: new Date().toISOString().split('T')[0], rep_name: currentUser.rep_name, vehicle_no: document.getElementById('vehicleBadge').innerText.replace('Vehicle: ', ''), item_name: document.getElementById('retItemSelect').value, qty: document.getElementById('retQty').value, condition: document.getElementById('retCondition').value };
+            await fetch(`${API_URL}?sheet=Returns`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ data: [retData] }) });
+            e.target.reset(); toggleLoader(false); alert("සාර්ථකව ඇතුළත් විය!");
+        });
+
+        function showReceiptModal(inv, items) {
+            lastPrintedInvoice = { inv, items };
+            document.getElementById('recInvId').innerText = inv.invoice_id;
+            document.getElementById('recDate').innerText = `${inv.date} ${inv.time}`;
+            document.getElementById('recRep').innerText = inv.rep_name;
+            document.getElementById('recShop').innerText = inv.customer_name;
+            document.getElementById('recPayMode').innerText = inv.payment_mode;
+            document.getElementById('recGrandTotal').innerText = `Rs. ${parseFloat(inv.total_amount).toLocaleString()}`;
+            const tbody = document.getElementById('recItemsBody');
+            tbody.innerHTML = '';
+            items.forEach(i => { tbody.innerHTML += `<tr><td class="py-0.5">${i.name}</td><td class="text-right">${i.qty}</td><td class="text-right">${i.total.toLocaleString()}</td></tr>`; });
+            const modal = document.getElementById('receiptModal');
+            modal.classList.remove('hidden'); modal.classList.add('flex');
+        }
+
+        function reprintInvoice(inv) { let items = []; try { items = JSON.parse(inv.items_json); } catch (e) {} showReceiptModal(inv, items); }
+        function closeReceiptModal() { const modal = document.getElementById('receiptModal'); modal.classList.add('hidden'); modal.classList.remove('flex'); }
+
+        async function connectBluetoothPrinter() {
+            if (!navigator.bluetooth) { alert("Web Bluetooth සහය නොදක්වයි. Standard Print භාවිත කරන්න."); return; }
+            try {
+                btDevice = await navigator.bluetooth.requestDevice({ acceptAllDevices: true, optionalServices: ['000018f0-0000-1000-8000-00805f9b34fb', 'e7810a71-73ae-499d-8c15-faa9aef0c3f2'] });
+                const server = await btDevice.gatt.connect();
+                const services = await server.getPrimaryServices();
+                for (const service of services) {
+                    const chars = await service.getCharacteristics();
+                    for (const c of chars) { if (c.properties.write || c.properties.writeWithoutResponse) { btCharacteristic = c; break; } }
+                    if (btCharacteristic) break;
+                }
+                document.getElementById('btStatusText').innerText = "Connected";
+                document.getElementById('btConnectBtn').classList.replace('text-indigo-400', 'text-emerald-400');
+                alert("Printer සම්බන්ධ විය!");
+            } catch (error) { alert("Printer සම්බන්ධ කිරීම අසාර්ථකයි: " + error.message); }
+        }
+
+        async function printViaBluetoothDirect() {
+            if (!btCharacteristic) { alert("පළමුව Printer එක සම්බන්ධ කරන්න!"); return; }
+            if (!lastPrintedInvoice) return;
+            const { inv, items } = lastPrintedInvoice;
+            let text = "\x1B\x40\x1B\x61\x01BITE COMPANY (PVT) LTD\nFresh & Crispy Snacks\n--------------------------------\n\x1B\x61\x00";
+            text += `Inv No : ${inv.invoice_id}\nDate   : ${inv.date} ${inv.time}\nRep    : ${inv.rep_name}\nShop   : ${inv.customer_name}\nMode   : ${inv.payment_mode}\n--------------------------------\n`;
+            items.forEach(i => { text += `${i.name}\n  ${i.qty} x ${i.price} = Rs.${i.total}\n`; });
+            text += `--------------------------------\nNET TOTAL: Rs. ${inv.total_amount}\n--------------------------------\n\x1B\x61\x01Thank You!\nZOREX Zystem\n\n\n`;
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(text);
+                for (let i = 0; i < data.length; i += 100) { await btCharacteristic.writeValue(data.slice(i, i + 100)); }
+            } catch (err) { alert("Print දෝෂයක්: " + err.message); }
+        }
+    </script>
+</body>
+</html>
